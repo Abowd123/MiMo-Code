@@ -253,17 +253,19 @@ const live: Layer.Layer<
           .join("\n"),
       )
 
-      // v5: memory-instructions section. Teaches the main agent how/where/when
-      // to maintain `MEMORY.md` and `checkpoint.md` directly via Edit. Project
-      // ID is resolved from the ALS-bound Instance with a safe fallback to
+      // v5: memory-instructions section. Teaches the agent how/where/when to
+      // maintain `MEMORY.md` and `checkpoint.md` directly via Edit. Project ID is
+      // resolved from the ALS-bound Instance with a safe fallback to
       // `ProjectID.global` (mirrors the pattern in session/checkpoint.ts so the
       // path the prompt advertises matches the path the writer actually writes).
-      // Skip for system-spawned actors (e.g. checkpoint-writer): they shouldn't
-      // see the user-facing memory instructions.
-      const isSystemActor = input.agentID
-        ? yield* actorReg.isSystemSpawned(SessionID.make(input.sessionID), input.agentID)
-        : false
-      if (!isSystemActor) {
+      // Injected only for actors whose context the checkpoint flow serves —
+      // main + peer. Subagents (explore/general/compose) use per-actor compaction
+      // and have no checkpoint duty; system-spawned actors (checkpoint-writer et al.)
+      // are the writers themselves. Shares the exact `servesCheckpoint` judgement
+      // with SessionPrune.fireCheckpoints so the "who owns a checkpoint" and "who is
+      // taught about it" sets can never drift apart.
+      const servesCheckpoint = yield* actorReg.servesCheckpoint(SessionID.make(input.sessionID), input.agentID)
+      if (servesCheckpoint) {
         const projectID =
           (yield* Effect.try({
             try: () => Instance.current?.project?.id as ProjectID | undefined,
