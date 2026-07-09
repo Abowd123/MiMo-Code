@@ -1071,14 +1071,17 @@ export const layer: Layer.Layer<
         if (onDisk) {
           log.info("rebuild using on-disk checkpoint; writer still running in background", { sessionID })
         } else {
+          // Defensive branch, rarely reached: tryStartCheckpointWriter bootstraps
+          // checkpoint.md from a template BEFORE it registers the writer, so
+          // whenever `inFlight` is truthy an on-disk file almost always exists
+          // and we took the fast path above. We only land here if that file is
+          // somehow absent mid-flight (e.g. deleted). In that case waiting is the
+          // only way to get any rebuild context, so block (bounded) and surface a
+          // visible busy status so the wait isn't a silent hang. Published on the
+          // bus directly (same event SessionStatus.set uses) to avoid a hard
+          // dependency on SessionStatus.Service; the runLoop owns the surrounding
+          // busy/idle lifecycle and resets it after.
           log.info("rebuild waiting for first-ever writer (no on-disk checkpoint yet)", { sessionID })
-          // Surface a user-visible reason for the wait. This is the only path
-          // that still blocks the main agent (first checkpoint, nothing on disk
-          // to rebuild from), so without a message the TUI would show a silent
-          // hang — historically the trigger for a manual abort. We publish the
-          // busy status directly on the bus (same event SessionStatus.set uses)
-          // to avoid taking a hard dependency on SessionStatus.Service here; the
-          // runLoop owns the surrounding busy/idle lifecycle and resets it after.
           yield* bus
             .publish(SessionStatus.Event.Status, {
               sessionID,
