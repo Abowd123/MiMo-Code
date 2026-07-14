@@ -2163,6 +2163,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         // so session.post reports outcome="cancelled" instead of "error".
         let cancelled = false
         let cancelReason: string | undefined
+        let lastSystemPrompt: string[] | undefined = undefined
 
         // Fires session.post exactly once via Effect.onExit on the body below.
         // Without this wrapper any yielded failure inside the while loop (provider
@@ -2208,6 +2209,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                 finalText: finalAsst ? assistantFinalText(finalAsst, finalParts) : undefined,
                 assistantMessageID: finalAsst?.id,
                 trajectory: serializeTrajectoryMessages(sliceMsgs),
+                systemPrompt: lastSystemPrompt,
               },
               {},
             )
@@ -3372,6 +3374,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               )
               const ownNewModelMsgs = yield* MessageV2.toModelMessagesEffect(ownNew, model)
               const prebuiltSystem = forkCtx.system
+              lastSystemPrompt = prebuiltSystem
               const modelMsgs: ModelMessage[] = [...forkCtx.inheritedMessages, ...ownNewModelMsgs]
               // additions is empty for fork agents: system is taken verbatim from
               // forkCtx.system. Passed as `system` to handle.process for logging/replay.
@@ -3413,6 +3416,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                     finish: handle.message.finish,
                     error: preQuery.cancelReason,
                     trajectory: trajectoryForStep(msgs, handle.message),
+                    systemPrompt: lastSystemPrompt,
                   },
                   {},
                 )
@@ -3465,6 +3469,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                             : sessionErrorText(handle.message.error),
                           finalText: assistantFinalText(handle.message, MessageV2.parts(handle.message.id)),
                           trajectory: trajectoryForStep(msgs, handle.message),
+                          systemPrompt: lastSystemPrompt,
                         },
                         {},
                       )
@@ -3598,6 +3603,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                 Effect.provideService(LLM.Service, llm),
                 Effect.provideService(ToolRegistry.Service, registry),
               )
+            lastSystemPrompt = prebuiltSystem
             const maxModeCfg = (yield* config.get()).experimental?.maxMode
             const useMaxMode =
               agent.name === MaxMode.MAX_MODE_AGENT && maxModeCfg !== undefined && format.type !== "json_schema"
@@ -3651,6 +3657,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                   finish: handle.message.finish,
                   error: preQuery.cancelReason,
                   trajectory: trajectoryForStep(msgs, handle.message),
+                  systemPrompt: lastSystemPrompt,
                 },
                 {},
               )
@@ -3688,6 +3695,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                         : sessionErrorText(handle.message.error),
                       finalText: assistantFinalText(handle.message, MessageV2.parts(handle.message.id)),
                       trajectory: trajectoryForStep(msgs, handle.message),
+                      systemPrompt: lastSystemPrompt,
                     },
                     {},
                   )
