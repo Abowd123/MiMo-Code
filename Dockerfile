@@ -7,7 +7,8 @@ ENV PATH="/root/.mimocode/bin:${PATH}"
 
 WORKDIR /app
 COPY . .
+RUN mkdir -p /app/web
 
 EXPOSE 8080
 
-CMD ["/bin/sh", "-c", "mimo serve --port $PORT --hostname 0.0.0.0"]
+CMD ["/bin/sh", "-c", "mimo web --port $PORT --hostname 0.0.0.0"]
