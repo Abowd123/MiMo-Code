@@ -7,4 +7,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD mimo web --port $PORT --hostname 0.0.0.0
+CMD mimo serve --port $PORT --hostname 0.0.0.0
