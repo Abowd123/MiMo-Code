@@ -11,4 +11,4 @@ RUN mkdir -p /app/web
 
 EXPOSE 8080
 
-CMD ["/bin/sh", "-c", "mimo web --port $PORT --hostname 0.0.0.0"]
+CMD ["/bin/sh", "-c", "yes '' | mimo web --port $PORT --hostname 0.0.0.0"]
