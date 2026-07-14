@@ -9,6 +9,8 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p /app/web
 
+RUN printf '#!/usr/bin/expect -f\nset timeout -1\nspawn mimo web --port $env(PORT) --hostname 0.0.0.0\nexpect "trust"\nsend "\\r"\ninteract\n' > /start.sh && chmod +x /start.sh
+
 EXPOSE 8080
 
-CMD ["/bin/sh", "-c", "expect -c 'set timeout -1; spawn mimo web --port $env(PORT) --hostname 0.0.0.0; expect \"trust\"; send \"\\r\"; interact'"]
+CMD ["/start.sh"]
