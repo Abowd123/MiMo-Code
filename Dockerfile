@@ -1,6 +1,9 @@
 FROM node:20-slim
 
-RUN npm install -g @mimo-ai/cli
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://mimo.xiaomi.com/install | bash
+
+ENV PATH="/root/.local/bin:${PATH}"
 
 WORKDIR /app
 COPY . .
